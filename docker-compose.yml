@@ -1,0 +1,11 @@
+version: "2.2"
+services:
+  db:
+    image: mariadb:10.5.9
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: investing
+      MYSQL_USER: inv
+      MYSQL_PASSWORD: secret_password
