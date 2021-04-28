@@ -1,41 +1,19 @@
 import sqlalchemy
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Date, String, Float, TIMESTAMP
+from sqlalchemy import MetaData, Table, Column, Integer, Date, String, Float, TIMESTAMP, inspect
+from sqlalchemy.ext.declarative import declarative_base
 
 
-def init_db(engine):
-    stocks_table = 'stocks'
-    currencies_table = 'currencies'
+Base = declarative_base()
 
-    if not engine.dialect.has_table(engine, stocks_table):
-        metadata = MetaData(engine)
-        Table(
-            stocks_table,
-            metadata,
-            Column('id', Integer, primary_key=True, nullable=False),
-            Column('ticker', String, nullable=False),
-            Column('name', String),
-            Column('buy_price', Float, nullable=False),
-            Column('amount', Float, nullable=False),
-            Column('current_price', Float, nullable=False),
-            Column('last_notification_price', Float),
-            Column('update_timestamp', TIMESTAMP)
-        )
-        metadata.create_all()
 
-    if not engine.dialect.has_table(engine, currencies_table):
-        metadata = MetaData(engine)
-        Table(
-            currencies_table,
-            metadata,
-            Column('id', Integer, primary_key=True, nullable=False),
-            Column('ticker', String, nullable=False),
-            Column('name', String),
-            Column('buy_price', Float, nullable=False),
-            Column('amount', Float, nullable=False),
-            Column('current_price', Float, nullable=False),
-            Column('last_notification_price', Float),
-            Column('update_timestamp', TIMESTAMP)
-        )
-        # Implement the creation
-        metadata.create_all()
-
+class Stock(Base):
+    __tablename__ = 'stocks'
+    id = Column(Integer, primary_key=True, nullable=False)
+    ticker = Column(String(20), nullable=False, server_default='', unique=True)
+    name = Column(String(80))
+    buy_price = Column(Float, nullable=False, server_default='0.0')
+    currency = Column(String(30), nullable=False, server_default='Currency.usd')
+    amount = Column(Float, nullable=False, server_default='0.0')
+    current_price = Column(Float)
+    last_notification_price = Column(Float)
+    update_timestamp = Column(TIMESTAMP)
