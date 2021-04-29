@@ -12,6 +12,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import collections
 
 
+scheduler = BackgroundScheduler()
+
+
 def get_figi_by_ticker(client, ticker):
     instrument = client.get_market_search_by_ticker(ticker=ticker)
     return instrument.payload.instruments[0].figi
@@ -80,12 +83,30 @@ def stocks_to_dict(client, stocks):
             'buy_price': stock.buy_price,
             'currency': stock.currency,
             'amount': stock.amount,
-            'current_price': get_current_price(client, get_figi_by_ticker(client, stock.ticker))
+            'current_price': stock.current_price
+            # 'current_price': get_current_price(client, get_figi_by_ticker(client, stock.ticker))
         }
     return result
 
 
-def report(client, session):
+@scheduler.scheduled_job(trigger='cron', hour='1', minute='19')
+def report():
+    TOKEN = os.getenv('TOKEN')
+    MARIADB_HOST = os.getenv('MARIADB_HOST')
+    MARIADB_DB = os.getenv('MARIADB_DB')
+    MARIADB_USER = os.getenv('MARIADB_USER')
+    MARIADB_PASSWORD = os.getenv('MARIADB_PASSWORD')
+
+    client = SyncClient(TOKEN)
+
+    engine = create_engine(
+        f'mysql+pymysql://{MARIADB_USER}:{MARIADB_PASSWORD}@{MARIADB_HOST}/{MARIADB_DB}?charset=utf8mb4')
+    Base.metadata.create_all(engine, checkfirst=True)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+
     database_stocks = session.query(Stock).all()
     database_stocks_dict = stocks_to_dict(client, database_stocks)
 
@@ -94,7 +115,24 @@ def report(client, session):
     daily_report(sorted_dict)
 
 
-def update_database(client, session, tz):
+@scheduler.scheduled_job(trigger='cron', minute='*')
+def update_database():
+    TOKEN = os.getenv('TOKEN')
+    tz = os.getenv('TIMEZONE')
+    MARIADB_HOST = os.getenv('MARIADB_HOST')
+    MARIADB_DB = os.getenv('MARIADB_DB')
+    MARIADB_USER = os.getenv('MARIADB_USER')
+    MARIADB_PASSWORD = os.getenv('MARIADB_PASSWORD')
+
+    client = SyncClient(TOKEN)
+
+    engine = create_engine(
+        f'mysql+pymysql://{MARIADB_USER}:{MARIADB_PASSWORD}@{MARIADB_HOST}/{MARIADB_DB}?charset=utf8mb4')
+    Base.metadata.create_all(engine, checkfirst=True)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
     portfolio = client.get_portfolio()
     portfolio_stocks = filter_stocks(portfolio)
     portfolio_stocks_set = stocks_to_set(portfolio_stocks)
@@ -158,37 +196,13 @@ def update_database(client, session, tz):
 
 
 def main():
-    TOKEN = os.getenv('TOKEN')
-    TIMEZONE = os.getenv('TIMEZONE')
-    MARIADB_HOST = os.getenv('MARIADB_HOST')
-    MARIADB_DB = os.getenv('MARIADB_DB')
-    MARIADB_USER = os.getenv('MARIADB_USER')
-    MARIADB_PASSWORD = os.getenv('MARIADB_PASSWORD')
 
-    client = SyncClient(TOKEN)
-
-    engine = create_engine(
-        f'mysql+pymysql://{MARIADB_USER}:{MARIADB_PASSWORD}@{MARIADB_HOST}/{MARIADB_DB}?charset=utf8mb4')
-    Base.metadata.create_all(engine, checkfirst=True)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    scheduler = BackgroundScheduler()
-
-    report(client, session)
-
-    # report = dict()
-    # stocks_set = set()
-    # for c in session.query(Stock).all():
-    #     stocks_set.add(Stock(ticker=c.ticker, name=c.name, buy_price=c.buy_price, currency=c.currency, amount=c.amount))
-
-    # daily_report_job = scheduler.add_job(func=daily_report(report, stocks_set), trigger='cron', id='daily_report')
+    # daily_report_job = scheduler.add_job(func=report(client, session), trigger='cron', id='daily_report')
     # update_data_job = scheduler.add_job(func=update_data(client, session), trigger='cron', id='update_data', minutes=1)
-    # scheduler.start()
+    scheduler.start()
 
     while True:
-        update_database(client, session, TIMEZONE)
+        # update_database(client, session, TIMEZONE)
         sleep(60)
 
 
