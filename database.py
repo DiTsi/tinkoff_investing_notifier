@@ -1,5 +1,4 @@
-import sqlalchemy
-from sqlalchemy import MetaData, Table, Column, Integer, Date, String, Float, TIMESTAMP, inspect, DATETIME
+from sqlalchemy import Column, Integer, String, Float, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
 
 
@@ -17,14 +16,3 @@ class Stock(Base):
     current_price = Column(Float)
     last_notification_price = Column(Float)
     update_timestamp = Column(TIMESTAMP)
-
-
-# class Operations(Base):
-#     __tablename__ = 'operations'
-#     id = Column(Integer, primary_key=True, nullable=False)
-#     ticker = Column(String(20), nullable=False, server_default='', unique=True)
-#     quantity = Column(Float, nullable=False)
-#     currency = Column(String(30), nullable=False, server_default='Currency.usd')
-#     commission = Column(Float, nullable=False)
-#     type = Column(String(30), nullable=False)
-#     datetime = Column(DATETIME, nullable=False)
