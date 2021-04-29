@@ -18,3 +18,10 @@ def daily_report():
     )
 
     bot.sendMessage(chat_id=telegram_group, text=text, parse_mode='HTML', disable_web_page_preview=True)
+
+
+def send_message(html_text):
+    telegram_token = os.getenv('TELEGRAM_TOKEN')
+    telegram_group = os.getenv('TELEGRAM_GROUP')
+    bot = telegram.Bot(token=telegram_token)
+    bot.sendMessage(chat_id=telegram_group, text=html_text, parse_mode='HTML', disable_web_page_preview=True)
