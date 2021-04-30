@@ -8,11 +8,11 @@ from bot import send_message, daily_report
 from sqlalchemy.orm import sessionmaker
 from app_types import currency_types
 from pytz import timezone
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import BlockingScheduler
 import collections
 
 
-scheduler = BackgroundScheduler()
+scheduler = BlockingScheduler()
 
 
 def get_figi_by_ticker(client, ticker):
@@ -196,14 +196,7 @@ def update_database():
 
 
 def main():
-
-    # daily_report_job = scheduler.add_job(func=report(client, session), trigger='cron', id='daily_report')
-    # update_data_job = scheduler.add_job(func=update_data(client, session), trigger='cron', id='update_data', minutes=1)
     scheduler.start()
-
-    while True:
-        # update_database(client, session, TIMEZONE)
-        sleep(60)
 
 
 main()
