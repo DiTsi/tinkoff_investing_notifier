@@ -3,13 +3,32 @@ services:
   db:
     image: mariadb:10.5.9
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: investing
       MYSQL_USER: inv
       MYSQL_PASSWORD: password
+    volumes:
+      - "investing_mysql_data:/var/lib/mysql"
+      - "investing_mysql_etc:/etc/mysql"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
 
   app:
     build:
       context: ./
+    image: ditsi/tinkoff_investing_notifier:latest
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - "./config.yml:/app/config.yml"
+
+volumes:
+  investing_mysql_data:
+  investing_mysql_etc:

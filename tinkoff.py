@@ -187,7 +187,6 @@ def update_database():
     new_stocks_dict = stocks_list_to_stocks_dict(client, portfolio_stocks, new_stocks)
     if len(new_stocks) > 0:
         for stock in new_stocks:
-            # session.add(Stock(new_stocks_dict[stock]))
             session.add(Stock(
                 ticker=new_stocks_dict[stock]['ticker'],
                 name=new_stocks_dict[stock]['name'],
