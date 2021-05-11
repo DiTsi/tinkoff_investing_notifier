@@ -91,6 +91,7 @@ def stocks_to_dict(client, stocks):
 def report():
     investing_token = os.getenv('TOKEN')
     mariadb_host = os.getenv('MARIADB_HOST')
+    mariadb_port = os.getenv('MARIADB_PORT')
     mariadb_db = os.getenv('MARIADB_DB')
     mariadb_user = os.getenv('MARIADB_USER')
     mariadb_password = os.getenv('MARIADB_PASSWORD')
@@ -98,7 +99,7 @@ def report():
     client = SyncClient(investing_token)
 
     engine = create_engine(
-        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}/{mariadb_db}?charset=utf8mb4')
+        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}:{mariadb_port}/{mariadb_db}?charset=utf8mb4')
     Base.metadata.create_all(engine, checkfirst=True)
 
     Session = sessionmaker(bind=engine)
@@ -132,6 +133,7 @@ def update_database():
     investing_token = os.getenv('TOKEN')
     tz = os.getenv('TIMEZONE')
     mariadb_host = os.getenv('MARIADB_HOST')
+    mariadb_port = os.getenv('MARIADB_PORT')
     mariadb_db = os.getenv('MARIADB_DB')
     mariadb_user = os.getenv('MARIADB_USER')
     mariadb_password = os.getenv('MARIADB_PASSWORD')
@@ -143,7 +145,7 @@ def update_database():
     client = SyncClient(investing_token)
 
     engine = create_engine(
-        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}/{mariadb_db}?charset=utf8mb4')
+        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}:{mariadb_port}/{mariadb_db}?charset=utf8mb4')
     Session = sessionmaker(bind=engine)
     session = Session()
 
@@ -242,11 +244,12 @@ def init():
 
     # create database structure
     mariadb_host = os.getenv('MARIADB_HOST')
+    mariadb_port = os.getenv('MARIADB_PORT')
     mariadb_db = os.getenv('MARIADB_DB')
     mariadb_user = os.getenv('MARIADB_USER')
     mariadb_password = os.getenv('MARIADB_PASSWORD')
     engine = create_engine(
-        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}/{mariadb_db}?charset=utf8mb4')
+        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}:{mariadb_port}/{mariadb_db}?charset=utf8mb4')
     Base.metadata.create_all(engine, checkfirst=True)
 
 

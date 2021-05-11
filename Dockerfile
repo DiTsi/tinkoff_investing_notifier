@@ -5,7 +5,7 @@ COPY . .
 RUN chown -R investing:users ./
 
 USER investing
-RUN pip install --upgrade pip --no-warn-script-location && pip install -r requirements.txt --no-warn-script-location
+RUN pip install -r requirements.txt --no-warn-script-location
 RUN cp config.yml.default config.yml
 
 CMD ["python", "tinkoff.py"]
