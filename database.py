@@ -15,4 +15,5 @@ class Stock(Base):
     amount = Column(Float, nullable=False, server_default='0.0')
     current_price = Column(Float)
     last_notification_price = Column(Float)
+    last_notification_date = Column(TIMESTAMP)
     update_timestamp = Column(TIMESTAMP)

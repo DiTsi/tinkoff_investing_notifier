@@ -1,15 +1,15 @@
 import os
-from time import sleep
 from tinvest import SyncClient, InstrumentType
 from database import Base, Stock
 from datetime import datetime
 from sqlalchemy import create_engine
-from bot import send_message, daily_report
 from sqlalchemy.orm import sessionmaker
+from bot import send_message, daily_report
 from app_types import currency_types
 from pytz import timezone
 from apscheduler.schedulers.background import BlockingScheduler
 import collections
+from yaml import load, Loader
 
 
 scheduler = BlockingScheduler()
@@ -84,28 +84,25 @@ def stocks_to_dict(client, stocks):
             'currency': stock.currency,
             'amount': stock.amount,
             'current_price': stock.current_price
-            # 'current_price': get_current_price(client, get_figi_by_ticker(client, stock.ticker))
         }
     return result
 
 
-@scheduler.scheduled_job(trigger='cron', hour='1', minute='19')
 def report():
-    TOKEN = os.getenv('TOKEN')
-    MARIADB_HOST = os.getenv('MARIADB_HOST')
-    MARIADB_DB = os.getenv('MARIADB_DB')
-    MARIADB_USER = os.getenv('MARIADB_USER')
-    MARIADB_PASSWORD = os.getenv('MARIADB_PASSWORD')
+    investing_token = os.getenv('TOKEN')
+    mariadb_host = os.getenv('MARIADB_HOST')
+    mariadb_db = os.getenv('MARIADB_DB')
+    mariadb_user = os.getenv('MARIADB_USER')
+    mariadb_password = os.getenv('MARIADB_PASSWORD')
 
-    client = SyncClient(TOKEN)
+    client = SyncClient(investing_token)
 
     engine = create_engine(
-        f'mysql+pymysql://{MARIADB_USER}:{MARIADB_PASSWORD}@{MARIADB_HOST}/{MARIADB_DB}?charset=utf8mb4')
+        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}/{mariadb_db}?charset=utf8mb4')
     Base.metadata.create_all(engine, checkfirst=True)
 
     Session = sessionmaker(bind=engine)
     session = Session()
-
 
     database_stocks = session.query(Stock).all()
     database_stocks_dict = stocks_to_dict(client, database_stocks)
@@ -115,21 +112,38 @@ def report():
     daily_report(sorted_dict)
 
 
+def delta(prev, now):
+    d = now.replace(tzinfo=None) - prev.replace(tzinfo=None)
+    days = d.days
+    hours = d.seconds // 3600
+    minutes = (d.seconds // 60) % 60
+    if hours > 72:
+        return f'{days} days'
+    elif hours > 1:
+        return f'{hours} hours'
+    elif minutes > 1:
+        return f'{minutes} minutes'
+    else:
+        return f'{d.seconds} seconds'
+
+
 @scheduler.scheduled_job(trigger='cron', minute='*')
 def update_database():
-    TOKEN = os.getenv('TOKEN')
+    investing_token = os.getenv('TOKEN')
     tz = os.getenv('TIMEZONE')
-    MARIADB_HOST = os.getenv('MARIADB_HOST')
-    MARIADB_DB = os.getenv('MARIADB_DB')
-    MARIADB_USER = os.getenv('MARIADB_USER')
-    MARIADB_PASSWORD = os.getenv('MARIADB_PASSWORD')
+    mariadb_host = os.getenv('MARIADB_HOST')
+    mariadb_db = os.getenv('MARIADB_DB')
+    mariadb_user = os.getenv('MARIADB_USER')
+    mariadb_password = os.getenv('MARIADB_PASSWORD')
 
-    client = SyncClient(TOKEN)
+    with open('config.yml', 'r') as f:
+        config = load(f, Loader=Loader)
+    notifications_stock_change_percent = config['notifications']['stock_change']['percent']
+
+    client = SyncClient(investing_token)
 
     engine = create_engine(
-        f'mysql+pymysql://{MARIADB_USER}:{MARIADB_PASSWORD}@{MARIADB_HOST}/{MARIADB_DB}?charset=utf8mb4')
-    Base.metadata.create_all(engine, checkfirst=True)
-
+        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}/{mariadb_db}?charset=utf8mb4')
     Session = sessionmaker(bind=engine)
     session = Session()
 
@@ -192,10 +206,52 @@ def update_database():
         c.current_price = portfolio_stocks_dict[ticker]['current_price']
         c.update_timestamp = datetime.now(tz=timezone(tz))
 
+    # Value change notify
+    for stock in session.query(Stock).all():
+        if stock.last_notification_price is None:
+            stock.last_notification_price = stock.current_price
+        if stock.last_notification_date is None:
+            stock.last_notification_date = stock.update_timestamp
+
+        change_perc = (float(stock.current_price) - float(stock.last_notification_price)) / float(stock.last_notification_price) * 100
+        if abs(change_perc) >= notifications_stock_change_percent:
+            moving_symbol = '➚' if change_perc > 0 else '➘'
+            timedelta_ = delta(stock.last_notification_date, stock.update_timestamp)
+            message = f'<a href="https://www.tinkoff.ru/invest/stocks/{stock.ticker}/">{stock.name}</a> {moving_symbol}\n'
+            message += f'{change_perc:.2f}% for the last {timedelta_}'
+            send_message(message)
+
+            stock.last_notification_date = stock.update_timestamp
+            stock.last_notification_price = stock.current_price
+
     session.commit()
 
 
+def init():
+    # check env exists
+    for env in ['TIMEZONE', 'TOKEN', 'TELEGRAM_GROUP', 'TELEGRAM_TOKEN',
+                'MARIADB_HOST', 'MARIADB_DB', 'MARIADB_USER', 'MARIADB_PASSWORD']:
+        if os.getenv(env) is None:
+            print(f'There is no {env} environment variable')
+            exit(0)
+
+    # check config exists
+    if not os.path.exists('config.yml'):
+        print(f'There is no config.yml file. Create one with \'cp config.yml.default config.yml\'')
+        exit(0)
+
+    # create database structure
+    mariadb_host = os.getenv('MARIADB_HOST')
+    mariadb_db = os.getenv('MARIADB_DB')
+    mariadb_user = os.getenv('MARIADB_USER')
+    mariadb_password = os.getenv('MARIADB_PASSWORD')
+    engine = create_engine(
+        f'mysql+pymysql://{mariadb_user}:{mariadb_password}@{mariadb_host}/{mariadb_db}?charset=utf8mb4')
+    Base.metadata.create_all(engine, checkfirst=True)
+
+
 def main():
+    init()
     scheduler.start()
 
 

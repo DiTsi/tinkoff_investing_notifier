@@ -1,0 +1,3 @@
+notifications:
+  stock_change:
+    percent: 2.0

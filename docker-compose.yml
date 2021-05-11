@@ -8,4 +8,8 @@ services:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: investing
       MYSQL_USER: inv
-      MYSQL_PASSWORD: secret_password
+      MYSQL_PASSWORD: password
+
+  app:
+    build:
+      context: ./
