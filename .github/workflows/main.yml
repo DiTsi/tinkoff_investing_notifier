@@ -39,7 +39,7 @@ jobs:
         id: tag
         with:
           source: ${{ github.ref }} # this translates to ref/heads/main on the main branch, but can be any arbitrary string 
-          find: 'ref/heads/'        # we want to remove ref/heads/ from source 
+          find: 'refs/tags/'        # we want to remove ref/heads/ from source 
           replace: ''  
       - name: Build and push / tag
         if: startsWith(github.ref, 'refs/tags/v')
