@@ -2,8 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
-    tags: [ 'v*.*' ]
+    branches: 
+      - 'master'
+    tags: 
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -37,5 +39,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_LOGIN }}/tinkoff_investing_notifier:${GITHUB_REF##*/}
+          tags: ${{ secrets.DOCKER_LOGIN }}/tinkoff_investing_notifier:${{ github.ref }}
 
