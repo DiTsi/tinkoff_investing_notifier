@@ -27,6 +27,3 @@ docker-compose up -d
 - **MARIADB_PASSWORD** - пароль пользователя базы данных
 - **TELEGRAM_GROUP** - группа в Telegram (формат: "-123456789")
 - **TELEGRAM_TOKEN** - токен бота в Telegram
-
-## Ближайшие планы
-- собрать образ docker для быстрого развёртывания
