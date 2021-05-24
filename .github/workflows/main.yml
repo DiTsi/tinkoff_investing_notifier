@@ -47,5 +47,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_LOGIN }}/tinkoff_investing_notifier:${{ steps.tag.outputs.result }}
+          tags: ${{ secrets.DOCKER_LOGIN }}/tinkoff_investing_notifier:${{ steps.tag.outputs.value }}
 
