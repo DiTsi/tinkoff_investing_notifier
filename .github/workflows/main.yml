@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*.*' ]
+  release:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Find Tag
+        if: ${{ github.action == 'release' }}
+        id: tagger
+        uses: jimschubert/query-tag-action@v1
+        with:
+          include: 'v*.*'
+      - name: Build and push / latest
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_LOGIN }}/tinkoff_investing_notifier:latest
+      - name: Build and push / SHA
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_LOGIN }}/tinkoff_investing_notifier:${{ github.sha::8 }}
+      - name: Build and push / tag
+        if: ${{ github.action == 'release' }}
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_LOGIN }}/tinkoff_investing_notifier:${{ steps.tagger.outputs.tag }}
+
