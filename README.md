@@ -15,6 +15,20 @@ python tinkoff.py
 ```
 
 ### Docker
+.env file
+```bash
+TIMEZONE=Europe/Moscow
+TOKEN=
+TELEGRAM_GROUP=
+TELEGRAM_TOKEN=
+
+MARIADB_HOST=
+MARIADB_PORT=
+MARIADB_DB=
+MARIADB_USER=
+MARIADB_PASSWORD=
+```
+
 ```bash
 docker-compose up -d
 ```
